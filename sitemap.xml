@@ -21,6 +21,16 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://your-site.com/memories/20251216-test/</loc>
+         <lastmod>2025-12-16</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://your-site.com/memories/20251216-test2/</loc>
+         <lastmod>2025-12-16</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://your-site.com/memories/20251216-%E5%90%88%E7%85%A7/</loc>
          <lastmod>2025-12-16</lastmod>
          <changefreq>daily</changefreq>
