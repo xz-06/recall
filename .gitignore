@@ -4,10 +4,12 @@ data/*.db-journal
 .DS_Store
 *.log
 .env
-site/
+site/*
+!site/upload.html
 uploads/
 *.pyc
 __pycache__/
 .venv/
 venv/
 .Python
+.vercel
