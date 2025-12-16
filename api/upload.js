@@ -84,10 +84,29 @@ module.exports = async (req, res) => {
           auth: process.env.GITHUB_TOKEN
         });
 
-        // 上传图片到GitHub
+        // 上传图片到GitHub（去重）
+        const uploadedImages = [];
+        const seenFiles = new Set();
+        
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
-          const imageFilename = `${Date.now()}-${i}-${file.name}`;
+          
+          // 使用文件内容的hash作为唯一标识（简单版本：使用大小+名称）
+          const fileKey = `${file.name}-${file.data.length}`;
+          
+          // 如果已经处理过相同的文件，跳过
+          if (seenFiles.has(fileKey)) {
+            console.log(`跳过重复文件: ${file.name}`);
+            continue;
+          }
+          
+          seenFiles.add(fileKey);
+          
+          // 清理文件名，移除特殊字符，只保留安全的字符
+          const safeName = file.name.replace(/[^a-zA-Z0-9.\u4e00-\u9fa5_-]/g, '_');
+          // 使用时间戳+随机数+索引+文件名，确保唯一性
+          const randomSuffix = Math.random().toString(36).substring(2, 8);
+          const imageFilename = `${Date.now()}-${i}-${randomSuffix}-${safeName}`;
           const imageBase64 = file.data.toString('base64');
 
           try {
@@ -100,7 +119,8 @@ module.exports = async (req, res) => {
               branch: 'main'
             });
 
-            markdown += `![图片${i + 1}](images/${imageFilename})\n\n`;
+            uploadedImages.push(imageFilename);
+            markdown += `![图片${uploadedImages.length}](images/${imageFilename})\n\n`;
           } catch (error) {
             console.error(`上传图片失败 ${imageFilename}:`, error);
           }
@@ -142,10 +162,26 @@ module.exports = async (req, res) => {
         });
       } catch (githubError) {
         console.error('GitHub API错误:', githubError);
-        return res.status(500).json({
-          error: '保存到GitHub失败',
+        
+        // 根据GitHub API错误状态码返回相应的HTTP状态码
+        let statusCode = 500;
+        let errorMessage = '保存到GitHub失败';
+        
+        if (githubError.status === 403) {
+          statusCode = 403;
+          errorMessage = '访问被拒绝。请检查GITHUB_TOKEN是否有仓库写入权限。';
+        } else if (githubError.status === 401) {
+          statusCode = 401;
+          errorMessage = '认证失败。请检查GITHUB_TOKEN是否正确配置。';
+        } else if (githubError.status === 404) {
+          statusCode = 404;
+          errorMessage = '仓库不存在或无法访问。';
+        }
+        
+        return res.status(statusCode).json({
+          error: errorMessage,
           details: githubError.message,
-          note: '请检查GITHUB_TOKEN环境变量是否正确配置'
+          note: '请检查GITHUB_TOKEN环境变量是否正确配置，并确保有repo权限'
         });
       }
     } else {
@@ -161,6 +197,14 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('上传失败:', error);
-    return res.status(500).json({ error: '上传失败', details: error.message });
+    
+    // 确保返回JSON格式的错误响应
+    const errorMessage = error.message || '上传失败';
+    const statusCode = error.status || 500;
+    
+    return res.status(statusCode).json({ 
+      error: errorMessage,
+      details: error.stack || error.toString()
+    });
   }
 };

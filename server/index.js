@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const uploadRoutes = require('./routes/upload');
+const memoryRoutes = require('./routes/memory');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -18,6 +19,7 @@ app.use('/images', express.static(path.join(__dirname, '../docs/images')));
 
 // API 路由
 app.use('/api/upload', uploadRoutes);
+app.use('/api/memory', memoryRoutes);
 
 // 服务上传页面
 app.get('/upload', (req, res) => {

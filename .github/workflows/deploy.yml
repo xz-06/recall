@@ -27,6 +27,14 @@ jobs:
       - name: Build MkDocs site
         run: mkdocs build
       
+      - name: Copy upload page for GitHub Pages
+        run: |
+          if [ -f "upload-github-pages.html" ]; then
+            cp upload-github-pages.html site/upload.html
+          elif [ -f "upload.html" ]; then
+            cp upload.html site/upload.html
+          fi
+      
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:

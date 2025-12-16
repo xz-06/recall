@@ -76,3 +76,9 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com
 
+# 自定义JavaScript和CSS
+extra_javascript:
+  - js/config.js
+  - js/memories.js
+  - js/detail.js
+

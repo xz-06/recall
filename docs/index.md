@@ -8,6 +8,10 @@
 
 ## 📅 最新回忆
 
+<div id="latestMemories">
+  <p>正在加载最新回忆...</p>
+</div>
+
 <div class="grid" markdown>
 :material-calendar:{ .lg .middle } **按时间查看** → [所有回忆](memories/by-date.md)
 </div>

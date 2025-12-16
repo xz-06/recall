@@ -2,7 +2,10 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>上传回忆 - 我们的回忆录</title>
     <style>
         * {
@@ -165,6 +168,83 @@
         .back-link:hover {
             text-decoration: underline;
         }
+
+        /* 移动端响应式样式 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 20px;
+                border-radius: 12px;
+            }
+
+            h1 {
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+
+            .form-group {
+                margin-bottom: 20px;
+            }
+
+            input[type="text"],
+            input[type="date"],
+            textarea {
+                padding: 10px;
+                font-size: 16px; /* 防止iOS自动缩放 */
+            }
+
+            .file-upload {
+                padding: 15px;
+            }
+
+            .btn-submit {
+                padding: 12px 24px;
+                font-size: 16px;
+                width: 100%;
+            }
+
+            .file-item {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+
+            .back-link {
+                font-size: 14px;
+                margin-bottom: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .file-upload {
+                padding: 12px;
+                font-size: 14px;
+            }
+        }
+
+        /* 防止iOS Safari自动缩放输入框 */
+        @media screen and (-webkit-min-device-pixel-ratio: 0) {
+            input[type="text"],
+            input[type="date"],
+            textarea,
+            select {
+                font-size: 16px !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -263,18 +343,38 @@
             document.getElementById('images').files = dataTransfer.files;
         }
 
+        let isSubmitting = false; // 防止重复提交
+        
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // 防止重复提交
+            if (isSubmitting) {
+                return;
+            }
             
             const formData = new FormData(e.target);
             const submitBtn = document.querySelector('.btn-submit');
             const message = document.getElementById('message');
 
-            // 添加图片文件
+            // 添加图片文件（去重）
+            const uniqueFiles = [];
+            const seenNames = new Set();
             selectedFiles.forEach(file => {
+                // 使用文件名+大小+最后修改时间作为唯一标识
+                const fileKey = `${file.name}-${file.size}-${file.lastModified}`;
+                if (!seenNames.has(fileKey)) {
+                    seenNames.add(fileKey);
+                    uniqueFiles.push(file);
+                }
+            });
+            
+            // 只添加去重后的文件
+            uniqueFiles.forEach(file => {
                 formData.append('images', file);
             });
 
+            isSubmitting = true;
             submitBtn.disabled = true;
             submitBtn.textContent = '上传中...';
             message.style.display = 'none';
@@ -290,45 +390,83 @@
                     body: formData
                 });
 
-                const result = await response.json();
+                // 检查响应状态
+                let result;
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('application/json')) {
+                    // 如果是JSON格式，解析JSON
+                    result = await response.json();
+                } else {
+                    // 如果不是JSON，获取文本内容
+                    const text = await response.text();
+                    try {
+                        // 尝试解析为JSON
+                        result = JSON.parse(text);
+                    } catch (e) {
+                        // 如果解析失败，创建错误对象
+                        result = {
+                            error: text || `上传失败 (${response.status} ${response.statusText})`
+                        };
+                    }
+                }
 
                 if (response.ok) {
                     message.className = 'message success';
-                    message.textContent = '✅ ' + result.message + ' 页面将在3秒后跳转...';
+                    message.textContent = '✅ ' + (result.message || '上传成功') + ' 页面将在3秒后跳转...';
                     message.style.display = 'block';
                     
-                    // 重置表单
+                    // 重置表单和文件列表
                     e.target.reset();
                     selectedFiles.length = 0;
                     updateFileList();
+                    updateFileInput();
                     
                     // 3秒后跳转到首页
                     setTimeout(() => {
                         const siteUrl = (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
-                            ? 'https://xz-06.github.io/recall' // 生产环境：你的GitHub Pages地址
+                            ? window.location.origin // 生产环境：使用当前域名（Vercel）
                             : 'http://127.0.0.1:8000'; // 开发环境
                         window.location.href = siteUrl;
                     }, 3000);
                 } else {
-                    throw new Error(result.error || '上传失败');
+                    // 处理错误响应
+                    let errorMessage = result.error || result.message || '上传失败';
+                    
+                    // 根据状态码提供更详细的错误信息
+                    if (response.status === 403) {
+                        errorMessage = '访问被拒绝。请检查GITHUB_TOKEN是否正确配置，并确保有仓库写入权限。';
+                    } else if (response.status === 401) {
+                        errorMessage = '认证失败。请检查GITHUB_TOKEN是否正确配置。';
+                    } else if (response.status === 413) {
+                        errorMessage = '文件太大。请确保单个文件不超过10MB。';
+                    } else if (response.status >= 500) {
+                        errorMessage = '服务器错误。请稍后重试。';
+                    }
+                    
+                    throw new Error(errorMessage);
                 }
             } catch (error) {
                 message.className = 'message error';
                 message.textContent = '❌ ' + error.message;
                 message.style.display = 'block';
             } finally {
+                isSubmitting = false;
                 submitBtn.disabled = false;
                 submitBtn.textContent = '💾 保存回忆';
             }
         });
 
         // 设置返回链接
-        document.getElementById('backLink').href = (() => {
-            if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-                return 'https://xz-06.github.io/recall'; // 生产环境：你的GitHub Pages地址
-            }
-            return 'http://127.0.0.1:8000'; // 开发环境
-        })();
+        const backLink = document.getElementById('backLink');
+        if (backLink) {
+            backLink.href = (() => {
+                if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                    return window.location.origin; // 生产环境：使用当前域名（Vercel）
+                }
+                return 'http://127.0.0.1:8000'; // 开发环境
+            })();
+        }
 
         // 设置默认日期为今天
         const today = new Date().toISOString().split('T')[0];
