@@ -576,14 +576,18 @@
 <h1 id="_1">💕 欢迎来到我们的回忆录<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
 <p>这里记录着我们共同走过的美好时光，每一个瞬间都值得珍藏。</p>
 <h2 id="_2">🚀 快速开始<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<p><a class="md-button md-button--primary" href="http://localhost:3001/upload">上传新回忆 <span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13h-4v4h-2v-4H7v-2h4V7h2v4h4m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2Z"/></svg></span></a></p>
+<p><a class="md-button md-button--primary" href="/upload">上传新回忆 <span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13h-4v4h-2v-4H7v-2h4V7h2v4h4m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2Z"/></svg></span></a></p>
 <h2 id="_3">📅 最新回忆<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<div id="latestMemories">
+  <p>正在加载最新回忆...</p>
+</div>
+
 <div class="grid">
 <p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 19H5V8h14m-3-7v2H8V1H6v2H5c-1.11 0-2 .89-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1V1m-1 11h-5v5h5v-5Z"/></svg></span> <strong>按时间查看</strong> → <a href="memories/by-date/">所有回忆</a></p>
 </div>
 <h2 id="_4">✨ 如何使用<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
 <ol>
-<li>点击上方的"上传新回忆"按钮或访问 <a href="http://localhost:3001/upload">上传页面</a></li>
+<li>点击上方的"上传新回忆"按钮或访问 <a href="/upload">上传页面</a></li>
 <li>填写回忆的标题、日期和内容</li>
 <li>上传相关图片</li>
 <li>保存后会自动更新到网站</li>
@@ -701,6 +705,12 @@
     
     
       <script src="assets/javascripts/bundle.d7c377c4.min.js"></script>
+      
+        <script src="js/config.js"></script>
+      
+        <script src="js/memories.js"></script>
+      
+        <script src="js/detail.js"></script>
       
     
   </body>
