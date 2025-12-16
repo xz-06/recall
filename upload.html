@@ -169,7 +169,7 @@
 </head>
 <body>
     <div class="container">
-        <a href="http://127.0.0.1:8000/" class="back-link">← 返回首页</a>
+        <a href="#" id="backLink" class="back-link">← 返回首页</a>
         <h1>💕 上传新回忆</h1>
         
         <form id="uploadForm">
@@ -210,6 +210,17 @@
     </div>
 
     <script>
+        // 配置API地址
+        const API_BASE_URL = (() => {
+            // 如果是生产环境（不是localhost），使用当前域名（Vercel Functions）
+            if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                // Vercel部署：使用当前域名（自动指向Vercel Functions）
+                return window.location.origin; // 例如: https://recall-self.vercel.app
+            }
+            // 开发环境使用本地地址
+            return 'http://localhost:3001';
+        })();
+
         const selectedFiles = [];
 
         function handleFileSelect(event) {
@@ -269,7 +280,12 @@
             message.style.display = 'none';
 
             try {
-                const response = await fetch('/api/upload/memory', {
+                // Vercel Functions使用 /api/upload，Railway使用 /api/upload/memory
+                const apiEndpoint = API_BASE_URL.includes('vercel.app') 
+                    ? `${API_BASE_URL}/api/upload`
+                    : `${API_BASE_URL}/api/upload/memory`;
+                
+                const response = await fetch(apiEndpoint, {
                     method: 'POST',
                     body: formData
                 });
@@ -288,7 +304,10 @@
                     
                     // 3秒后跳转到首页
                     setTimeout(() => {
-                        window.location.href = 'http://127.0.0.1:8000/';
+                        const siteUrl = (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+                            ? 'https://xz-06.github.io/recall' // 生产环境：你的GitHub Pages地址
+                            : 'http://127.0.0.1:8000'; // 开发环境
+                        window.location.href = siteUrl;
                     }, 3000);
                 } else {
                     throw new Error(result.error || '上传失败');
@@ -302,6 +321,14 @@
                 submitBtn.textContent = '💾 保存回忆';
             }
         });
+
+        // 设置返回链接
+        document.getElementById('backLink').href = (() => {
+            if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                return 'https://xz-06.github.io/recall'; // 生产环境：你的GitHub Pages地址
+            }
+            return 'http://127.0.0.1:8000'; // 开发环境
+        })();
 
         // 设置默认日期为今天
         const today = new Date().toISOString().split('T')[0];
