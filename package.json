@@ -1,0 +1,30 @@
+{
+  "name": "recall-memories",
+  "version": "1.0.0",
+  "description": "基于MkDocs的回忆记录系统",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run mkdocs:serve\"",
+    "server": "nodemon server/index.js",
+    "mkdocs:serve": "python -m mkdocs serve -a 127.0.0.1:8000",
+    "mkdocs:build": "python -m mkdocs build",
+    "build": "npm run mkdocs:build",
+    "start": "cross-env NODE_ENV=production node server/index.js",
+    "install-all": "npm install && pip install --user -r requirements.txt",
+    "setup": "npm install && pip install --user -r requirements.txt && npm run mkdocs:build"
+  },
+  "keywords": ["memories", "recall", "mkdocs", "love"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1",
+    "body-parser": "^1.20.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3"
+  }
+}

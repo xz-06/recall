@@ -1,0 +1,8 @@
+{
+  "buildCommand": "pip install -r requirements.txt && mkdocs build",
+  "outputDirectory": "site",
+  "devCommand": "mkdocs serve",
+  "installCommand": "pip install -r requirements.txt",
+  "framework": null
+}
+
