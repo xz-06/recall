@@ -17,7 +17,10 @@ module.exports = async (req, res) => {
 
   try {
     if (!process.env.GITHUB_TOKEN) {
-      return res.status(200).json([]);
+      return res.status(500).json({ 
+        error: 'GITHUB_TOKEN未配置',
+        message: '请检查GITHUB_TOKEN环境变量是否正确配置'
+      });
     }
 
     const octokit = new Octokit({
@@ -80,7 +83,31 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('获取失败:', error);
-    return res.status(500).json({ error: '获取失败', details: error.message });
+    
+    // 根据GitHub API错误状态码返回相应的HTTP状态码和错误信息
+    let statusCode = 500;
+    let errorMessage = '获取失败';
+    let details = error.message;
+    
+    if (error.status === 401) {
+      statusCode = 401;
+      errorMessage = '认证失败';
+      details = '请检查GITHUB_TOKEN是否正确配置';
+    } else if (error.status === 403) {
+      statusCode = 403;
+      errorMessage = '访问被拒绝';
+      details = '请检查GITHUB_TOKEN是否有仓库访问权限';
+    } else if (error.status === 404) {
+      statusCode = 404;
+      errorMessage = '仓库或路径不存在';
+      details = '请检查仓库名称和路径是否正确';
+    }
+    
+    return res.status(statusCode).json({ 
+      error: errorMessage, 
+      details: details,
+      note: '如果问题持续，请检查GITHUB_TOKEN配置'
+    });
   }
 };
 

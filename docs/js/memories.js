@@ -1,37 +1,43 @@
 // 回忆页面动态加载脚本
 (function() {
     // 检测是否为生产环境
-    const isProduction = window.location.hostname !== 'localhost' && 
+    const isProduction = window.location.hostname !== 'localhost' &&
                          window.location.hostname !== '127.0.0.1' &&
                          !window.location.hostname.includes('127.0.0.1');
-    
-    const apiUrl = isProduction 
-        ? window.location.origin + '/api/memories'
-        : 'http://localhost:3001/api/memories';
-    
+
+    // 检测是否为GitHub Pages
+    const isGitHubPages = window.location.hostname.includes('github.io');
+    const pathParts = window.location.pathname.split('/').filter(p => p);
+    const repoName = pathParts[0] || 'recall';
+    const basePath = isGitHubPages ? `/${repoName}` : '';
+
+    const apiUrl = isGitHubPages
+        ? null // GitHub Pages不支持API端点
+        : (isProduction
+            ? window.location.origin + '/api/memories'
+            : 'http://localhost:3001/api/memories');
+
     // 加载按时间排序的回忆
     function loadMemoriesByDate() {
         const container = document.getElementById('memoriesByDate');
         if (!container) return;
-        
+
+        if (!apiUrl) {
+            container.innerHTML = '<p>💕 回忆会在这里显示。上传新回忆后，页面会自动更新。</p>';
+            return;
+        }
+
         fetch(apiUrl)
             .then(res => res.json())
             .then(memories => {
                 if (memories.length === 0) {
-                    const isGitHubPages = window.location.hostname.includes('github.io');
-                    const pathParts = window.location.pathname.split('/').filter(p => p);
-                    const repoName = pathParts[0] || 'recall';
-                    const uploadLink = isGitHubPages ? `/${repoName}/upload` : '/upload';
+                    const uploadLink = isGitHubPages ? `${basePath}/upload` : '/upload';
                     container.innerHTML = `<p>💕 还没有回忆，<a href="${uploadLink}">上传第一条回忆</a>吧！</p>`;
                     return;
                 }
-                
+
                 let html = '';
                 memories.forEach(memory => {
-                    const isGitHubPages = window.location.hostname.includes('github.io');
-                    const pathParts = window.location.pathname.split('/').filter(p => p);
-                    const repoName = pathParts[0] || 'recall';
-                    const basePath = isGitHubPages ? `/${repoName}` : '';
                     const detailUrl = `${basePath}/memories/detail?file=${encodeURIComponent(memory.filename)}`;
                     html += `
                         <div style="margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid #e0e0e0;">
@@ -51,7 +57,7 @@
                         </div>
                     `;
                 });
-                
+
                 container.innerHTML = html;
             })
             .catch(error => {
@@ -59,34 +65,31 @@
                 container.innerHTML = '<p>❌ 加载回忆失败，请稍后重试。如果问题持续，请检查GITHUB_TOKEN配置。</p>';
             });
     }
-    
+
     // 加载所有回忆
     function loadAllMemories() {
         const container = document.getElementById('allMemories');
         if (!container) return;
-        
+
+        if (!apiUrl) {
+            container.innerHTML = '<p>💕 回忆会在这里显示。上传新回忆后，页面会自动更新。</p>';
+            return;
+        }
+
         fetch(apiUrl)
             .then(res => res.json())
             .then(memories => {
                 if (memories.length === 0) {
-                    const isGitHubPages = window.location.hostname.includes('github.io');
-                    const pathParts = window.location.pathname.split('/').filter(p => p);
-                    const repoName = pathParts[0] || 'recall';
-                    const uploadLink = isGitHubPages ? `/${repoName}/upload` : '/upload';
+                    const uploadLink = isGitHubPages ? `${basePath}/upload` : '/upload';
                     container.innerHTML = `<p>💕 还没有回忆，<a href="${uploadLink}">上传第一条回忆</a>吧！</p>`;
                     return;
                 }
-                
-                const isGitHubPages = window.location.hostname.includes('github.io');
-                const pathParts = window.location.pathname.split('/').filter(p => p);
-                const repoName = pathParts[0] || 'recall';
-                const basePath = isGitHubPages ? `/${repoName}` : '';
-                
+
                 let html = '<div style="display: grid; gap: 20px; margin-top: 20px;">';
                 memories.forEach(memory => {
                     const detailUrl = `${basePath}/memories/detail?file=${encodeURIComponent(memory.filename)}`;
                     html += `
-                        <div style="border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background: #f9f9f9; transition: transform 0.2s, box-shadow 0.2s;" 
+                        <div style="border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background: #f9f9f9; transition: transform 0.2s, box-shadow 0.2s;"
                              onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'"
                              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
                             <h3 style="margin: 0 0 12px 0; font-size: 20px;">
@@ -109,7 +112,7 @@
                     `;
                 });
                 html += '</div>';
-                
+
                 container.innerHTML = html;
             })
             .catch(error => {
@@ -117,13 +120,13 @@
                 container.innerHTML = '<p>❌ 加载回忆失败，请稍后重试。如果问题持续，请检查GITHUB_TOKEN配置。</p>';
             });
     }
-    
+
     // 页面加载完成后执行
     function init() {
         loadMemoriesByDate();
         loadAllMemories();
     }
-    
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
