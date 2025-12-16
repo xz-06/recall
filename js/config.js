@@ -15,8 +15,11 @@
         const isGitHubPages = window.location.hostname.includes('github.io');
         
         if (isGitHubPages) {
-            // GitHub Pages：使用相对路径
-            UPLOAD_URL = '/upload';
+            // GitHub Pages：需要包含仓库名路径
+            // 从当前URL提取仓库名，例如：https://xz-06.github.io/recall/ -> /recall
+            const pathParts = window.location.pathname.split('/').filter(p => p);
+            const repoName = pathParts[0] || 'recall'; // 默认使用recall
+            UPLOAD_URL = `/${repoName}/upload`;
         } else if (isProduction) {
             // Vercel部署：使用当前域名（自动指向Vercel Functions）
             UPLOAD_URL = window.location.origin + '/upload'; // 例如: https://recall-self.vercel.app/upload
@@ -26,14 +29,14 @@
         }
         
         // 查找所有包含 /upload 的链接
-        const links = document.querySelectorAll('a[href*="/upload"]');
+        const links = document.querySelectorAll('a[href*="/upload"], a[href="/upload"]');
         links.forEach(link => {
             const href = link.getAttribute('href');
-            if (href && (href === '/upload' || href.includes('/upload'))) {
-                // 避免重复更新
-                if (!link.href.includes(UPLOAD_URL)) {
-                    link.href = UPLOAD_URL;
-                }
+            if (href && (href === '/upload' || href.endsWith('/upload'))) {
+                // 强制更新为正确的URL
+                link.href = UPLOAD_URL;
+                // 也更新href属性，确保MkDocs渲染时使用正确路径
+                link.setAttribute('href', UPLOAD_URL);
             }
         });
         
@@ -41,11 +44,10 @@
         const buttons = document.querySelectorAll('.md-button');
         buttons.forEach(button => {
             const href = button.getAttribute('href');
-            if (href && (href === '/upload' || href.includes('/upload'))) {
-                // 避免重复更新
-                if (!button.href.includes(UPLOAD_URL)) {
-                    button.href = UPLOAD_URL;
-                }
+            if (href && (href === '/upload' || href.endsWith('/upload'))) {
+                // 强制更新为正确的URL
+                button.href = UPLOAD_URL;
+                button.setAttribute('href', UPLOAD_URL);
             }
         });
     }
@@ -86,7 +88,8 @@
             .then(res => res.json())
             .then(memories => {
                 if (memories.length === 0) {
-                    memoriesContainer.innerHTML = '<p>还没有回忆，<a href="/upload">上传第一条回忆</a>吧！</p>';
+                    const uploadLink = isGitHubPages ? '/recall/upload' : '/upload';
+                    memoriesContainer.innerHTML = `<p>还没有回忆，<a href="${uploadLink}">上传第一条回忆</a>吧！</p>`;
                     return;
                 }
                 
