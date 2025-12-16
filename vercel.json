@@ -8,5 +8,11 @@
     "api/*.js": {
       "maxDuration": 10
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/upload",
+      "destination": "/api/upload-page"
+    }
+  ]
 }

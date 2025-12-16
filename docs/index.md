@@ -4,7 +4,7 @@
 
 ## 🚀 快速开始
 
-[上传新回忆 :material-plus-circle:](http://localhost:3001/upload){ .md-button .md-button--primary }
+[上传新回忆 :material-plus-circle:](/upload){ .md-button .md-button--primary }
 
 ## 📅 最新回忆
 
@@ -14,7 +14,7 @@
 
 ## ✨ 如何使用
 
-1. 点击上方的"上传新回忆"按钮或访问 [上传页面](http://localhost:3001/upload)
+1. 点击上方的"上传新回忆"按钮或访问 [上传页面](/upload)
 2. 填写回忆的标题、日期和内容
 3. 上传相关图片
 4. 保存后会自动更新到网站
