@@ -226,7 +226,7 @@
 </head>
 <body>
     <div class="container">
-        <a href="/" class="back-link">← 返回首页</a>
+        <a href="#" id="backLink" class="back-link">← 返回首页</a>
         <h1>💕 上传新回忆</h1>
         
         <div class="token-info">
@@ -484,7 +484,10 @@
                 
                 // 3秒后跳转到首页
                 setTimeout(() => {
-                    window.location.href = '/';
+                    // 检测是否为GitHub Pages
+                    const isGitHubPages = window.location.hostname.includes('github.io');
+                    const basePath = isGitHubPages ? '/recall' : '';
+                    window.location.href = basePath + '/';
                 }, 3000);
             } catch (error) {
                 message.className = 'message error';
@@ -499,6 +502,14 @@
         // 设置默认日期为今天
         const today = new Date().toISOString().split('T')[0];
         document.querySelector('input[name="date"]').value = today;
+
+        // 设置返回链接
+        const backLink = document.getElementById('backLink');
+        if (backLink) {
+            const isGitHubPages = window.location.hostname.includes('github.io');
+            const basePath = isGitHubPages ? '/recall' : '';
+            backLink.href = basePath + '/';
+        }
 
         // 加载保存的配置
         loadSavedConfig();
