@@ -18,13 +18,21 @@
             .then(res => res.json())
             .then(memories => {
                 if (memories.length === 0) {
-                    container.innerHTML = '<p>💕 还没有回忆，<a href="/upload">上传第一条回忆</a>吧！</p>';
+                    const isGitHubPages = window.location.hostname.includes('github.io');
+                    const pathParts = window.location.pathname.split('/').filter(p => p);
+                    const repoName = pathParts[0] || 'recall';
+                    const uploadLink = isGitHubPages ? `/${repoName}/upload` : '/upload';
+                    container.innerHTML = `<p>💕 还没有回忆，<a href="${uploadLink}">上传第一条回忆</a>吧！</p>`;
                     return;
                 }
                 
                 let html = '';
                 memories.forEach(memory => {
-                    const detailUrl = `/memories/detail?file=${encodeURIComponent(memory.filename)}`;
+                    const isGitHubPages = window.location.hostname.includes('github.io');
+                    const pathParts = window.location.pathname.split('/').filter(p => p);
+                    const repoName = pathParts[0] || 'recall';
+                    const basePath = isGitHubPages ? `/${repoName}` : '';
+                    const detailUrl = `${basePath}/memories/detail?file=${encodeURIComponent(memory.filename)}`;
                     html += `
                         <div style="margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid #e0e0e0;">
                             <h2 style="margin: 0 0 8px 0; font-size: 24px;">
@@ -61,13 +69,22 @@
             .then(res => res.json())
             .then(memories => {
                 if (memories.length === 0) {
-                    container.innerHTML = '<p>💕 还没有回忆，<a href="/upload">上传第一条回忆</a>吧！</p>';
+                    const isGitHubPages = window.location.hostname.includes('github.io');
+                    const pathParts = window.location.pathname.split('/').filter(p => p);
+                    const repoName = pathParts[0] || 'recall';
+                    const uploadLink = isGitHubPages ? `/${repoName}/upload` : '/upload';
+                    container.innerHTML = `<p>💕 还没有回忆，<a href="${uploadLink}">上传第一条回忆</a>吧！</p>`;
                     return;
                 }
                 
+                const isGitHubPages = window.location.hostname.includes('github.io');
+                const pathParts = window.location.pathname.split('/').filter(p => p);
+                const repoName = pathParts[0] || 'recall';
+                const basePath = isGitHubPages ? `/${repoName}` : '';
+                
                 let html = '<div style="display: grid; gap: 20px; margin-top: 20px;">';
                 memories.forEach(memory => {
-                    const detailUrl = `/memories/detail?file=${encodeURIComponent(memory.filename)}`;
+                    const detailUrl = `${basePath}/memories/detail?file=${encodeURIComponent(memory.filename)}`;
                     html += `
                         <div style="border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background: #f9f9f9; transition: transform 0.2s, box-shadow 0.2s;" 
                              onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'"
