@@ -71,81 +71,58 @@
         path: 'docs/memories'
     };
 
-    // 从 GitHub API 获取回忆列表（适用于 GitHub Pages）
-    async function fetchMemoriesFromGitHub() {
-        try {
-            // 获取目录内容
-            const dirUrl = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?ref=${GITHUB_CONFIG.branch}`;
-            const dirResponse = await fetch(dirUrl);
-            
-            if (!dirResponse.ok) {
-                if (dirResponse.status === 404) {
-                    throw new Error('仓库或路径不存在，请检查仓库配置');
-                } else if (dirResponse.status === 403) {
-                    throw new Error('访问被拒绝，如果仓库是私有的，需要配置GitHub Token');
-                }
-                throw new Error(`GitHub API 错误: ${dirResponse.status} ${dirResponse.statusText}`);
-            }
+    // 环境标记与基础路径
+    const isGitHubPages = window.location.hostname.includes('github.io');
+    const pathParts = window.location.pathname.split('/').filter(p => p);
+    const repoName = pathParts[0] || 'recall';
+    const basePath = isGitHubPages ? `/${repoName}` : '';
 
-            const files = await dirResponse.json();
-            
-            if (!Array.isArray(files)) {
-                return [];
-            }
+    // 回忆数据缓存，避免重复请求
+    let memoriesCache = null;
 
-            // 过滤出.md文件（排除index.md和by-date.md）
-            const memoryFiles = files
-                .filter(file => file.type === 'file' && 
-                               file.name.endsWith('.md') && 
-                               file.name !== 'index.md' && 
-                               file.name !== 'by-date.md')
-                .slice(0, 20); // 限制数量
+    // 获取回忆数据：
+    // - GitHub Pages: 读取构建产出的静态 JSON（site/memories/index.json）
+    // - 其他环境: 调用服务器 API
+    function getMemoriesData() {
+        if (memoriesCache) return memoriesCache;
 
-            // 获取每个文件的内容
-            const memories = await Promise.all(
-                memoryFiles.map(async (file) => {
-                    try {
-                        // 使用 download_url 获取文件内容（更简单，不需要解码 base64）
-                        const fileResponse = await fetch(file.download_url);
-                        if (!fileResponse.ok) {
-                            console.error(`获取文件 ${file.name} 失败:`, fileResponse.status);
-                            return null;
-                        }
-                        
-                        const content = await fileResponse.text();
-                        
-                        // 解析 Markdown 内容
-                        const titleMatch = content.match(/^#\s+(.+)$/m);
-                        const dateMatch = content.match(/\*\*日期\*\*:\s+(.+)$/m);
-                        
-                        return {
-                            filename: file.name,
-                            title: titleMatch ? titleMatch[1].trim() : file.name.replace('.md', ''),
-                            date: dateMatch ? dateMatch[1].trim() : '',
-                            path: `/memories/${file.name}`,
-                            excerpt: content.substring(0, 100).replace(/#/g, '').replace(/\*\*/g, '').trim() + '...'
-                        };
-                    } catch (error) {
-                        console.error(`处理文件 ${file.name} 失败:`, error);
-                        return null;
+        if (isGitHubPages) {
+            const staticUrl = `${basePath}/memories/index.json`;
+            memoriesCache = fetch(staticUrl, { cache: 'no-cache' })
+                .then(async res => {
+                    if (!res.ok) {
+                        const text = await res.text().catch(() => '');
+                        throw new Error(`加载静态回忆数据失败 (${res.status}): ${text.substring(0, 120)}`);
                     }
-                })
-            );
-
-            // 过滤掉null值并按日期排序
-            return memories
-                .filter(m => m !== null)
-                .sort((a, b) => {
-                    // 按日期排序，最新的在前
-                    if (a.date && b.date) {
-                        return new Date(b.date) - new Date(a.date);
-                    }
-                    return b.filename.localeCompare(a.filename);
+                    return res.json();
                 });
-        } catch (error) {
-            console.error('从 GitHub 获取回忆失败:', error);
-            throw error;
+        } else {
+            const apiUrl = isProduction
+                ? window.location.origin + '/api/memories'
+                : 'http://localhost:3001/api/memories';
+
+            memoriesCache = fetch(apiUrl)
+                .then(async res => {
+                    const contentType = res.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        const text = await res.text();
+                        throw new Error(`服务器返回了非JSON响应 (${res.status}): ${text.substring(0, 100)}`);
+                    }
+                    
+                    const data = await res.json();
+                    
+                    if (!res.ok) {
+                        const errorMessage = data.error || `HTTP ${res.status}`;
+                        const errorDetails = data.details || data.message || '';
+                        const errorNote = data.note || '';
+                        throw new Error(`${errorMessage}${errorDetails ? ': ' + errorDetails : ''}${errorNote ? ' ' + errorNote : ''}`);
+                    }
+                    
+                    return data;
+                });
         }
+
+        return memoriesCache;
     }
 
     // 加载最新回忆列表
@@ -241,7 +218,6 @@
             .catch(error => {
                 console.error('加载回忆失败:', error);
                 const errorMessage = error.message || '未知错误';
-                const isGitHubPages = window.location.hostname.includes('github.io');
                 const errorHint = isGitHubPages 
                     ? '如果仓库是私有的，需要将仓库设置为公开，或者使用其他部署方式（如 Vercel）。'
                     : '如果问题持续，请检查GITHUB_TOKEN配置。';
@@ -274,39 +250,7 @@
         const repoName = pathParts[0] || 'recall';
         const basePath = isGitHubPages ? `/${repoName}` : '';
 
-        // 选择数据源
-        let fetchPromise;
-        if (isGitHubPages) {
-            // GitHub Pages: 直接从 GitHub API 获取
-            fetchPromise = fetchMemoriesFromGitHub();
-        } else {
-            // Vercel 或其他: 使用服务器 API
-            const apiUrl = isProduction
-                ? window.location.origin + '/api/memories'
-                : 'http://localhost:3001/api/memories';
-            
-            fetchPromise = fetch(apiUrl)
-                .then(async res => {
-                    const contentType = res.headers.get('content-type');
-                    if (!contentType || !contentType.includes('application/json')) {
-                        const text = await res.text();
-                        throw new Error(`服务器返回了非JSON响应 (${res.status}): ${text.substring(0, 100)}`);
-                    }
-                    
-                    const data = await res.json();
-                    
-                    if (!res.ok) {
-                        const errorMessage = data.error || `HTTP ${res.status}`;
-                        const errorDetails = data.details || data.message || '';
-                        const errorNote = data.note || '';
-                        throw new Error(`${errorMessage}${errorDetails ? ': ' + errorDetails : ''}${errorNote ? ' ' + errorNote : ''}`);
-                    }
-                    
-                    return data;
-                });
-        }
-
-        fetchPromise
+        getMemoriesData()
             .then(memories => {
                 if (!Array.isArray(memories)) {
                     throw new Error('返回的数据格式不正确');

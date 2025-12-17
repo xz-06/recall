@@ -26,6 +26,46 @@ jobs:
       
       - name: Build MkDocs site
         run: mkdocs build
+
+      - name: Generate static memories JSON for GitHub Pages
+        run: |
+          python - <<'PY'
+          import json, re, os
+          from pathlib import Path
+
+          MEM_DIR = Path("docs/memories")
+          OUT_DIR = Path("site/memories")
+          OUT_DIR.mkdir(parents=True, exist_ok=True)
+          out_file = OUT_DIR / "index.json"
+
+          def parse_memory(path: Path):
+              content = path.read_text(encoding="utf-8", errors="ignore")
+              title = re.search(r"^#\s+(.+)$", content, flags=re.M)
+              date = re.search(r"\*\*日期\*\*:\s+(.+)$", content, flags=re.M)
+              excerpt = re.sub(r"[#*]", "", content)
+              excerpt = re.sub(r"\s+", " ", excerpt).strip()
+              return {
+                  "filename": path.name,
+                  "title": title.group(1).strip() if title else path.stem,
+                  "date": date.group(1).strip() if date else "",
+                  "path": f"/memories/{path.name}",
+                  "excerpt": (excerpt[:160] + "...") if len(excerpt) > 160 else excerpt,
+              }
+
+          memories = []
+          for md in MEM_DIR.glob("*.md"):
+              if md.name in ("index.md", "by-date.md"):
+                  continue
+              memories.append(parse_memory(md))
+
+          def sort_key(item):
+              # Prefer date if present, else fallback to filename (newer first lexicographically)
+              return (item["date"] or "", item["filename"])
+
+          memories_sorted = sorted(memories, key=sort_key, reverse=True)
+          out_file.write_text(json.dumps(memories_sorted, ensure_ascii=False, indent=2), encoding="utf-8")
+          print(f"Wrote {len(memories_sorted)} memories to {out_file}")
+          PY
       
       - name: Copy upload page
         run: |
