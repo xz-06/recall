@@ -2,6 +2,8 @@
 // 在MkDocs页面加载时自动更新链接
 
 (function() {
+     // GitHub Pages 环境下的 API 代理前缀，避免直连 api.github.com 被重置
+    const GITHUB_API_PROXY = 'https://ghproxy.com/';
     // 检测是否为生产环境
     const isProduction = window.location.hostname !== 'localhost' &&
                          window.location.hostname !== '127.0.0.1' &&
@@ -74,8 +76,11 @@
     // 从 GitHub API 获取回忆列表（适用于 GitHub Pages）
     async function fetchMemoriesFromGitHub() {
         try {
+            // 仅在 GitHub Pages 下使用代理前缀，其他环境直连
+            const isGitHubPages = window.location.hostname.includes('github.io');
+            const proxyPrefix = isGitHubPages ? GITHUB_API_PROXY : '';
             // 获取目录内容
-            const dirUrl = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?ref=${GITHUB_CONFIG.branch}`;
+            const dirUrl = `${proxyPrefix}https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?ref=${GITHUB_CONFIG.branch}`;
             const dirResponse = await fetch(dirUrl);
             
             if (!dirResponse.ok) {
@@ -105,8 +110,10 @@
             const memories = await Promise.all(
                 memoryFiles.map(async (file) => {
                     try {
+                        const isGitHubPages = window.location.hostname.includes('github.io');
+                        const proxyPrefix = isGitHubPages ? GITHUB_API_PROXY : '';
+                        const fileResponse = await fetch(`${proxyPrefix}${file.download_url}`);
                         // 使用 download_url 获取文件内容（更简单，不需要解码 base64）
-                        const fileResponse = await fetch(file.download_url);
                         if (!fileResponse.ok) {
                             console.error(`获取文件 ${file.name} 失败:`, fileResponse.status);
                             return null;
